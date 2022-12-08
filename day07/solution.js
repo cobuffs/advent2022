@@ -1,5 +1,5 @@
 const fs = require('fs');
-const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\n")
+const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
 //for each entry $ is a command...either cd or ls
 
 let root =  buildnode("/", null);
