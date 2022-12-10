@@ -1,7 +1,6 @@
 const fs = require('fs');
 const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n");
 
-// Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the sum of these six signal strengths?
 let cycle = 1;
 let xreg = 1;
 
@@ -28,5 +27,4 @@ function movecycle() {
     if(xreg - 1 === col || xreg + 1 === col || xreg === col) screenstr += "#";
     else screenstr += ".";
     cycle++;
-    
 }
