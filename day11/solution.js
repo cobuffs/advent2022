@@ -24,6 +24,7 @@ for(var i = 0; i < monkeys.length; i++){
 inspections.sort((a,b) => { return b-a });
 console.log(inspections);
 console.log(inspections[0] * inspections[1]);
+console.log(isdivby11("512006"));
 
 function buildtestmonkeys() { 
     let monkeys = [];
@@ -130,4 +131,116 @@ function buildmonkeys () {
 
 
     return monkeys;
+}
+
+function isdivby23(strnum) {
+    while(strnum.length > 2) {
+        //remove last digit
+        const lastdigit = Number(strnum.substring(strnum.length - 1));
+        strnum = strnum.slice(0, -1);
+        if (strnum.length > 4) {
+            let newend = Number(strnum.substring(strnum.length - 3)) + (lastdigit*7);
+            strnum = strnum.slice(0, -3);
+            strnum += newend;  
+        } else {
+            strnum = "" + (Number(strnum) + (lastdigit*7))
+        }
+    }
+    return Number(strnum) % 23 === 0
+}
+
+function isdivby19(strnum) {
+    while(strnum.length > 2) {
+        //remove last digit
+        const lastdigit = Number(strnum.substring(strnum.length - 1));
+        strnum = strnum.slice(0, -1);
+        if (strnum.length > 4) {
+            let newend = Number(strnum.substring(strnum.length - 3)) + (lastdigit*2);
+            strnum = strnum.slice(0, -3);
+            strnum += newend;  
+        } else {
+            strnum = "" + (Number(strnum) + (lastdigit*2))
+        }
+    }
+    return Number(strnum) % 19 === 0
+}
+
+function isdivby13(strnum) {
+    while(strnum.length > 2) {
+        //remove last digit
+        const lastdigit = Number(strnum.substring(strnum.length - 1));
+        strnum = strnum.slice(0, -1);
+        if (strnum.length > 4) {
+            let newend = Number(strnum.substring(strnum.length - 3)) + (lastdigit*4);
+            strnum = strnum.slice(0, -3);
+            strnum += newend;  
+        } else {
+            strnum = "" + (Number(strnum) + (lastdigit*4))
+        }
+    }
+    return Number(strnum) % 13 === 0
+}
+
+function isdivby17(strnum) {
+    while(strnum.length > 2) {
+        //remove last digit
+        const lastdigit = Number(strnum.substring(strnum.length - 1));
+        strnum = strnum.slice(0, -1);
+        if (strnum.length > 4) {
+            let newend = Number(strnum.substring(strnum.length - 3)) - (lastdigit*5);
+            strnum = strnum.slice(0, -3);
+            strnum += newend;  
+        } else {
+            strnum = "" + (Number(strnum) - (lastdigit*5))
+        }
+    }
+    return Number(strnum) % 17 === 0
+}
+
+function isdivby3(strnum) {
+    //sum the digits
+    const digits = strnum.split("");
+    let sum = 0;
+    for (var i = 0; i < digits.length; i++) {
+        sum += Number(digits[i]);
+    }
+    return sum % 3 === 0;
+}
+
+function isdivby7(strnum) {
+    while(strnum.length > 2) {
+        //remove last digit
+        const lastdigit = Number(strnum.substring(strnum.length - 1));
+        strnum = strnum.slice(0, -1);
+        if (strnum.length > 4) {
+            let newend = Number(strnum.substring(strnum.length - 3)) + (lastdigit*5);
+            strnum = strnum.slice(0, -3);
+            strnum += newend;  
+        } else {
+            strnum = "" + (Number(strnum) + (lastdigit*5))
+        }
+    }
+    return Number(strnum) % 7 === 0
+}
+
+function isdivby2(strnum) {
+    return Number(strnum.substring(strnum.length - 1)) % 2 === 0;
+}
+
+function isdivby5(strnum) {
+    const last = strnum.substring(strnum.length - 1);
+    return last === "5" || last === "0";
+}
+
+function isdivby11(strnum) {
+    //sum the digits
+    const digits = strnum.split("");
+    let oddsum = 0;
+    let evensum = 0;
+    for (var i = 0; i < digits.length; i++) {
+        if(i % 2 === 0) {
+            evensum += Number(digits[i]);
+        } else oddsum += Number(digits[i]);
+    }
+    return (oddsum - evensum) % 11 === 0;
 }
