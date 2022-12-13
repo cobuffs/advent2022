@@ -1,17 +1,21 @@
 //After each monkey inspects an item but before it tests your worry level, your relief that the monkey's inspection didn't damage the item causes your worry level to be divided by three and rounded down to the nearest integer.
-let monkeys = buildtestmonkeys();
+let monkeys = buildmonkeys();
+const p2treducer = 13*17*19*23;
+//const p2treducer = 96577;
+//96577
+const p2reducer = 11*19*5*2*13*7*3*17;
 
 //i think i want to pass around a set of prime factors instead of worry levels
-for(var i = 0; i < monkeys.length; i++){
-    let newitems = [];
-    let monkey = monkeys[i];
-    for(var j = 0; j < monkey.items.length; j++) {
-        //turn into prime factors
-        let updateditem = primeFactors(monkey.items[j]).sort((a,b) => { return b-a; });
-        newitems.push(updateditem);
-    }
-    monkey.items = newitems;
-}
+// for(var i = 0; i < monkeys.length; i++){
+//     let newitems = [];
+//     let monkey = monkeys[i];
+//     for(var j = 0; j < monkey.items.length; j++) {
+//         //turn into prime factors
+//         let updateditem = primeFactors(monkey.items[j]).sort((a,b) => { return b-a; });
+//         newitems.push(updateditem);
+//     }
+//     monkey.items = newitems;
+// }
 
 //go 20 rounds and count the number of inspections for each monkey
 for (var round = 1; round <= 10000; round++) {
@@ -23,6 +27,7 @@ for (var round = 1; round <= 10000; round++) {
             monkey.inspections++;
             let worrylevel = monkey.operation(item);
             //worrylevel = monkey.adjustworry(worrylevel);
+            worrylevel = worrylevel % p2reducer;
             let newmonkey = monkey.test(worrylevel);
             monkeys[newmonkey].items.push(worrylevel);
         }
@@ -43,15 +48,9 @@ function buildtestmonkeys() {
     const monkey0 = {
         "inspections":0,
         "items":[79, 98],
-        //"operation": function(worrylevel) { return worrylevel * 19; },
-        "operation": function(worrylevel) { 
-            worrylevel.push(19); 
-            worrylevel = worrylevel.sort((a,b) => { return b-a; });
-            return worrylevel;
-        },
-        //"adjustworry": function(worrylevel) {return worrylevel % leastCommonMultiple(23 < worrylevel ? 23 : worrylevel, worrylevel > 23 ? worrylevel : 23);},
+        "operation": function(worrylevel) { return worrylevel * 19; },
         "test": function(worrylevel) { 
-            return worrylevel.indexOf(23) !== -1 ? 2 : 3; 
+            return worrylevel % 23 === 0 ? 2 : 3; 
         }
     };
     monkeys.push(monkey0);
@@ -59,16 +58,9 @@ function buildtestmonkeys() {
     const monkey1 = {
         "inspections":0,
         "items":[54, 65, 75, 74],
-        //"operation": function(worrylevel) { return worrylevel + 6; },
-        "operation": function(worrylevel) {
-            //grab lowest prime
-            const lowprime = worrylevel.pop();
-            const newfactors = primeFactors(lowprime + 6);
-            return worrylevel.concat(newfactors).sort((a,b) => { return b-a; });
-        },
-        //"adjustworry": function(worrylevel) {return worrylevel % leastCommonMultiple(19 < worrylevel ? 19 : worrylevel, worrylevel > 19 ? worrylevel : 19);},
+        "operation": function(worrylevel) { return worrylevel + 6; },
         "test": function(worrylevel) { 
-            return worrylevel.indexOf(19) !== -1 ? 2 : 0; 
+            return worrylevel % 19 === 0 ? 2 : 0; 
         }
     };
     monkeys.push(monkey1);
@@ -76,11 +68,9 @@ function buildtestmonkeys() {
     const monkey2 = {
         "inspections":0,
         "items":[79, 60, 97],
-        //"operation": function(worrylevel) { return worrylevel * worrylevel; },
-        "operation": function(worrylevel) { return worrylevel.concat(worrylevel).sort((a,b) => { return b-a; });},
-        //"adjustworry": function(worrylevel) {return worrylevel % leastCommonMultiple(13 < worrylevel ? 13 : worrylevel, worrylevel > 13 ? worrylevel : 13);},
+        "operation": function(worrylevel) { return worrylevel * worrylevel; },
         "test": function(worrylevel) {     
-            return worrylevel.indexOf(13) !== -1 ? 1 : 3; 
+            return worrylevel % 13 === 0 ? 1 : 3; 
         }
     };
     monkeys.push(monkey2);
@@ -88,16 +78,9 @@ function buildtestmonkeys() {
     const monkey3 = {
         "inspections":0,
         "items":[74],
-        //"operation": function(worrylevel) { return worrylevel + 3; },
-        "operation": function(worrylevel) {
-            //grab lowest prime
-            const lowprime = worrylevel.pop();
-            const newfactors = primeFactors(lowprime + 3);
-            return worrylevel.concat(newfactors).sort((a,b) => { return b-a; });
-        },        
-        //"adjustworry": function(worrylevel) {return worrylevel % leastCommonMultiple(17 < worrylevel ? 17 : worrylevel, worrylevel > 17 ? worrylevel : 17);},
+        "operation": function(worrylevel) { return worrylevel + 3; },      
         "test": function(worrylevel) { 
-            return worrylevel.indexOf(17) !== -1 ? 0 : 1; 
+            return worrylevel % 17 === 0 ? 0 : 1; 
         }
     };
     monkeys.push(monkey3);
