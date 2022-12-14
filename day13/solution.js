@@ -1,19 +1,44 @@
 const fs = require('fs');
 const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
 
-let pairs = [];
-let indexofvalids = [];
+let packets = [];
+//let indexofvalids = [];
 
 for(let i = 0; i < entries.length; i=i+3) {
     //read 2 lines at a time and build pairs
     const p1 = eval(entries[i]);
     const p2 = eval(entries[i+1]);
-    pairs.push([p1,p2]);
-    const validpair = compare(p1,p2);
-    if(validpair) indexofvalids.push(pairs.length);
+    packets.push(p1);
+    packets.push(p2);
+    // const validpair = compare(p1,p2);
+    // if(validpair) indexofvalids.push(pairs.length);
 }
-console.log(indexofvalids.reduce((p,v) => {return p+v;}));
+//console.log(indexofvalids.reduce((p,v) => {return p+v;}));
+packets.push([[2]]);
+packets.push([[6]]);
 
+packets.sort((a,b) => {return sortpackets(a,b);});
+
+//find 2 and 6
+let index2 = -1;
+let index6 = -1;
+for(let i = 0; i < packets.length; i++) {
+    if(packets[i].length === 1) {
+        const elem = packets[i][0];
+        if(elem.length === 1) {
+            const deeper = packets[i][0][0];
+            if(deeper === 6) index6 = i+1;
+            else if(deeper === 2) index2 = i+1;
+        }
+    }
+}
+console.log(packets);
+console.log(index2*index6);
+
+function sortpackets(a,b) {
+    const result = compare(a,b);
+    return result ? -1 : 1;
+}
 
 function compare(p1,p2) {
     for(let i = 0; i < p1.length; i++) {
@@ -46,30 +71,3 @@ function compare(p1,p2) {
     if(p1.length < p2.length) return true;
     else return null;
 }
-
-
-// function compare(p1,p2) {
-//     //get types to match
-//     let valid = true;
-//     if(p2 === undefined) valid = false;
-//     for(var index = 0; index < p1.length && valid; index++) {
-//         if(index >= p2.length) return false;
-//         const left = p1[index];
-//         const right = p2[index];
-//         //check if p2 is out of items
-//         if(!Array.isArray(left) && Array.isArray(right)) valid = compare([left],right);
-//         if(Array.isArray(left) && !Array.isArray(right) && valid) valid = compare(left,[right]);
-        
-//         if(!Array.isArray(left) && !Array.isArray(right)) {
-//             if(left < right) return true;
-//             else if(left > right) {
-//                 //console.log(`compare ${p1[index]} and ${p2[index]}`);
-//                 return false;
-//             }
-//         } else {
-//             valid = compare(left, right);
-//         }
-//     }
-
-//     return valid;
-// }
