@@ -189,7 +189,7 @@ class WeightedGraph {
 }
 
 const fs = require('fs');
-const entries = fs.readFileSync('sample.txt', 'utf8').toString().trim().split("\n")
+const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
 
 let heightmap = [];
 let weighted = new WeightedGraph();
@@ -209,11 +209,17 @@ for(let i = 0; i < entries.length; i++) {
         vertexes.set(`${i}, ${col}`, {"key":`${i}, ${col}`, "val": val});
     }
 }
-
+let possibilities = [];
+let results = [];
 buildconnections();
+
 //
-console.log(weighted.shortestPath(start.key, end.key));
-//console.log(weighted.Dijkstra(start.key, end.key).path.length);
+//console.log(weighted.Dijkstra(start.key, end.key));
+for(let choice = 0; choice < possibilities.length; choice++) {
+    const result = weighted.Dijkstra(possibilities[choice], end.key).path.length - 1;
+    if(result > 0) results.push(result);
+}
+console.log(results.sort((a,b) => {return a-b;}));
 
 function buildconnections() {
     for(let row = 0; row < heightmap.length; row++) {
@@ -222,9 +228,9 @@ function buildconnections() {
             const key = `${row}, ${col}`;
             //create a vertex if it doesnt exit
             weighted.addVertex(key);
-            if(node === "S") {
-                start = {"key": key , "col": col, "row":row};
-                node = "a";
+            if(node === "S" || node === "a") {
+                possibilities.push(key);
+                //possible starting points
             } else if(node === "E") {
                 end = {"key": key, "col": col, "row":row};
                 node = "z";
@@ -238,7 +244,7 @@ function buildconnections() {
                 const weight = neighbor.charCodeAt(0) - node.charCodeAt(0);
                 if(weight <= 1 ) {
                     //can go down but cant go up more than 1
-                    weighted.addEdge(key, key2, weight);
+                    weighted.addEdge(key, key2, 1);
                 }
             }
             //S
@@ -249,7 +255,7 @@ function buildconnections() {
                 const weight = neighbor.charCodeAt(0) - node.charCodeAt(0);
                 if(weight <= 1) {
                     //can go down but cant go up more than 1
-                    weighted.addEdge(key, key2, weight);
+                    weighted.addEdge(key, key2, 1);
                 }
             }
             //E
@@ -260,7 +266,7 @@ function buildconnections() {
                 const weight = neighbor.charCodeAt(0) - node.charCodeAt(0);
                 if(weight <= 1) {
                     //can go down but cant go up more than 1
-                    weighted.addEdge(key, key2, weight);
+                    weighted.addEdge(key, key2, 1);
                 }
             }
             //W
@@ -271,7 +277,7 @@ function buildconnections() {
                 const weight = neighbor.charCodeAt(0) - node.charCodeAt(0);
                 if(weight <= 1) {
                     //can go down but cant go up more than 1
-                    weighted.addEdge(key, key2, weight);
+                    weighted.addEdge(key, key2, 1);
                 }
             }
         }
