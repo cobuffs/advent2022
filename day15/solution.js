@@ -1,11 +1,13 @@
 const fs = require('fs');
-const entries = fs.readFileSync('sample.txt', 'utf8').toString().trim().split("\r\n")
+const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
 
 let cave = new Map();
 let sensors = [];
 let beacons = new Set();
 let xmin = 1000000;
-let xmax = 0
+let xmax = 0;
+let ymin = 4000000;
+let ymax = 0;
 let distances = [];
 
 
@@ -26,11 +28,17 @@ for(let i = 0; i < entries.length; i++) {
     const sensor = buildsensor(line[0][0], line[0][1], line[1][0], line[1][1]);
     if (sensor.x < xmin) xmin = sensor.x;
     if (sensor.x > xmax) xmax = sensor.x;
+
     cave.set(sensor.key, sensor);
     sensors.push(sensor.key);
     beacons.add(sensor.beacon.key);
     distances.push(sensor.distancetobeacon);
+    if(sensor.y - sensor.distancetobeacon < ymin) ymin = sensor.y - sensor.distancetobeacon < 0 ? 0 : sensor.y - sensor.distancetobeacon;
+    if(sensor.y + sensor.distancetobeacon > ymax) ymax = sensor.y + sensor.distancetobeacon > 4000000 ? 4000000 : sensor.y + sensor.distancetobeacon;
 }
+distances.sort((a,b) => { return a-b; });
+
+//find highest and lowest y
 
 part2();
 function part1() {
@@ -51,109 +59,58 @@ function part1() {
 }
 
 function part2() {
-    //with the beacon distance for each sensor we know that sensors scan field pretty easily. maybe we can just choose points that fall adjacent to field for each sensor?
-    let pointstocheck = new Set();
-    const max = 20;
-    //const max = 4000000;
-
-    for(let i = 0; i < sensors.length; i++) {
-        const sensor = cave.get(sensors[i]);
-        //check a diamond perimeter 1 unit greater than the current distance
-        const newdistance = sensor.distancetobeacon + 1;
-        console.log(`working on sensor ${sensor.key} with distance: ${sensor.distancetobeacon}`);
-        
-        // //check tips
-        // const top = `${sensor.x},${sensor.y - newdistance}`;
-        // if (pointstocheck.has(top)) pointstocheck.delete(top);
-        // else pointstocheck.add(top);
-
-        // const bottom = `${sensor.x},${sensor.y + newdistance}`;
-        // if (pointstocheck.has(bottom)) pointstocheck.delete(bottom);
-        // else pointstocheck.add(bottom);
-
-        // const left = `${sensor.x - newdistance},${sensor.y}`;
-        // if (pointstocheck.has(left)) pointstocheck.delete(left);
-        // else pointstocheck.add(left);
-
-        // const right = `${sensor.x + newdistance},${sensor.y}`;
-        // if (pointstocheck.has(right)) pointstocheck.delete(right);
-        // else pointstocheck.add(right);
-        let loops = 0;
-
-        //NE
-        for(let i = 1; i <= newdistance; i++) {
-            let point = `${sensor.x + i},${sensor.y - newdistance + i}`;
-            if (pointstocheck.has(point)) pointstocheck.delete(point);
-            else pointstocheck.add(point);
-            loops++;
+    let possiblepoints = [];
+    //let max = 20;
+    let max = 4000000;
+    for(let i = 0; i <= max; i++) {
+        //collection of xleft to xright for the row
+        let rowranges = [];
+        for(let sensorn = 0; sensorn < sensors.length; sensorn++) {
+            const sensor = cave.get(sensors[sensorn]);
+            const rowsaway = Math.abs(sensor.y - i);
+            const xchange = sensor.distancetobeacon - rowsaway;
+            if(xchange >= 0){
+                const range = [sensor.x - xchange < 0 ? 0 : sensor.x - xchange, sensor.x + xchange > max ? max : sensor.x + xchange];
+                rowranges.push(range);
+            }
+        }
+        //consolidate ranges?
+        rowranges.sort( (a,b) => { return a[0] - b[0]; } );
+        for(let j = 0; j < rowranges.length - 1;) {
+            let us = rowranges[j];
+            const them = rowranges [j+1]
+            //if we contain the next range
+            if(us[1] >= them[0] && us[1] >= them[1]) {
+                //remove it
+                rowranges.splice(j+1,1);
+            } else if (us[1] >= them[0] && them[1] > us[1]) {
+                //need to update our end
+                us[1] = them[1];
+                rowranges.splice(j+1,1);;
+            } else if (them[0] > us[1]) {
+                //keep going
+                j++;
+            }
+        }
+        //console.log(`done with sensors`);
+        if(rowranges.length !== 1) {
+            //we have a candidate point at differences between ranges, i
+            const r2 = rowranges[1];
+            const xval = r2[0] - 1;
+            possiblepoints.push(`${xval},${i}: ${xval * 4000000 + i}`);
         }
 
-        //SE
-        for(let i = 1; i <= newdistance; i++) {
-            let point = `${sensor.x + newdistance - i},${sensor.y + i}`;
-            if (pointstocheck.has(point)) pointstocheck.delete(point);
-            else pointstocheck.add(point);
-            loops++;
-        }
-
-        //SW
-        for(let i = 1; i <= newdistance; i++) {
-            let point = `${sensor.x - i},${sensor.y + newdistance - i}`;
-            if (pointstocheck.has(point)) pointstocheck.delete(point);
-            else pointstocheck.add(point);
-            loops++;
-        }
-        //NW
-        for(let i = 1; i <= newdistance; i++) {
-            let point = `${sensor.x - newdistance + i},${sensor.y - i}`;
-            if (pointstocheck.has(point)) pointstocheck.delete(point);
-            else pointstocheck.add(point);
-            loops++;
-        }
-        console.log(`resulting size of points to check: ${pointstocheck.size} with ${loops}`);
     }
-
-    console.log(pointstocheck.size);
+    console.log(possiblepoints);
 }
 
-// function part2() {
-    
-//     let starty = 0;
-//     const endx = 4000000;
-//     const endy = 4000000;
-
-//     //const endx = 20;
-//     //const endy = 20;
-
-//     let firstfalse = false;
-
-//     for(;starty <= endy; starty++) {
-//         console.log(`row ${starty}`);
-//         for(let startx = 0; startx <= endx; startx++) {
-//             //we dont start until we start getting falses
-//             const pointtocheck = {"x":startx, "y":starty};
-//             const ck = canbeaconbehere(pointtocheck);
-//             if(!ck && !firstfalse) {
-//                 firstfalse = true;
-//             } else if (ck && firstfalse) {
-//                 //check the next one to see if we get another true. if we do, we can break. if we don't we have a beacon loc if there isnt already one there
-//                 const nextpt = {"x":startx + 1, "y":starty};
-//                 const nextck = canbeaconbehere(nextpt);
-//                 if(nextck) break;
-//                 else {
-//                     //candidate
-//                     console.log(`candidate found at ${pointtocheck.x}, ${pointtocheck.y}`);
-//                     if(beacons.has(`${pointtocheck.x},${pointtocheck.y}`)) {
-//                         //too bad
-//                     } else {
-//                         console.log((4000000 * pointtocheck.x) + pointtocheck.y);
-//                         return;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+function buildpoint(x,y) {
+    return {
+        "key": `${x},${y}`,
+        "x": x,
+        "y": y
+    }
+}
 
 function canbeaconbehere(point) {
     //doubt this will work for p2, but for now its fine
