@@ -79,7 +79,7 @@ class Graph {
 }
 
 const fs = require('fs');
-const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
+const entries = fs.readFileSync('sample.txt', 'utf8').toString().trim().split("\r\n")
 let valves = new Map();
 
 let valveswithvals = new Set();
@@ -149,10 +149,18 @@ function part1() {
             const vkey = disttoothervalves[i];
             if(decisions.includes(vkey)) continue;
             if(minutesremaining - distancesfromvtov[valve.key][vkey] < 0) continue;
-            possibilities.push({valve: vkey, next: vkey, cost: distancesfromvtov[valve.key][vkey]});
+            possibilities.push({valve: vkey, cost: distancesfromvtov[valve.key][vkey]});
         }
         if (possibilities.length > 0) {
-            pressurereleased += Math.max(...possibilities.map(dec => doit(dec.valve, decisions + "," + dec.next, minutesremaining - dec.cost)));
+            let pressures = [];
+            for(var i = 0; i < possibilities.length; i++ ){
+                //see what we get
+                let possibility = possibilities[i];
+                pressures = [...pressures, doit(possibility.valve, decisions + ", " + possibility.valve, minutesremaining - possibility.cost)];
+                
+            }
+
+            pressurereleased += Math.max(pressures);
         }
         return pressurereleased;
     }
