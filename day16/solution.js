@@ -1,7 +1,89 @@
+class Graph {
+    constructor(props) {
+        this.neighbors = {}
+    }
+
+    addEdge(u, v) {
+        if (!this.neighbors[u]) this.neighbors[u] = []
+        this.neighbors[u].push(v)
+    }
+
+    bfs(start) {
+        if (!this.neighbors[start] || !this.neighbors[start].length) {
+            return [start]
+        }
+
+        var results = { "nodes": [] },
+            queue = this.neighbors[start],
+            count = 1
+
+        while (queue.length) {
+            var node = queue.shift()
+            if (!results[node] || !results[node].visited) {
+                results[node] = { visited: true, steps: count }
+                results["nodes"].push(node)
+                if (this.neighbors[node]) {
+                    if (this.neighbors[node].length) {
+                        count++
+                        queue.push(...this.neighbors[node])
+                    } else {
+                        continue
+                    }
+                }
+            }
+        }
+        return results
+    }
+
+    shortestPath(start, end) {
+        if (start == end) {
+            return [start, end]
+        }
+
+        var queue = [start],
+            visited = {},
+            predecessor = {},
+            tail = 0,
+            path
+
+        while (tail < queue.length) {
+            var u = queue[tail++]
+            if (!this.neighbors[u]) {
+                continue
+            }
+
+            var neighbors = this.neighbors[u]
+            for (var i = 0; i < neighbors.length; ++i) {
+                var v = neighbors[i]
+                if (visited[v]) {
+                    continue
+                }
+                visited[v] = true
+                if (v === end) {   // Check if the path is complete.
+                    path = [v]   // If so, backtrack through the path.
+                    while (u !== start) {
+                        path.push(u)
+                        u = predecessor[u]
+                    }
+                    path.push(u)
+                    path.reverse()
+                    return path
+                }
+                predecessor[v] = u
+                queue.push(v)
+            }
+        }
+
+        return path
+    }
+}
+
 const fs = require('fs');
-const entries = fs.readFileSync('sample.txt', 'utf8').toString().trim().split("\r\n")
+const entries = fs.readFileSync('input.txt', 'utf8').toString().trim().split("\r\n")
 let valves = new Map();
+
 let valveswithvals = new Set();
+let rooms = new Graph();
 
 for(let i = 0; i < entries.length; i++) {
     let processing = entries[i];
@@ -20,71 +102,127 @@ for(let i = 0; i < entries.length; i++) {
     processing[1] = processing[1].replace("lead","foo");
     processing[1] = processing[1].split("foo foo to foo ");
     valve.connections = processing[1][1].split(" ");
+    for(var j = 0; j < valve.connections.length; j++) {
+        rooms.addEdge(valve.key, valve.connections[j]);
+    }
 
     valves.set(valve.key, valve);
     if(valve.flow > 0) valveswithvals.add(valve.key);
     
-    console.log(valve);
+    
 }
 
 part1();
 
-//part 1: just brute force this piece for now. build every combination of rooms/valves that you can hit in 30 minutes and take the highest flow
 function part1() {
+    //get all the distances between valves
+    let distancesfromvtov = {};
+    //add starting node
+    distancesfromvtov["AA"] = {};
+    valveswithvals.forEach((v2, k2) => {     
+        distancesfromvtov["AA"][k2] = rooms.shortestPath("AA",k2).length;
+    });
 
-    const start = valves.get("AA");
-    let sets = [];
-
-    generatetraversal(start, [], 0, [], 0);
-
-    sets.sort((a,b) => {return b[1] - a[1];});
-
-    console.log(`${sets[0][0]} had the most pressure released: ${sets[0][1]}`);
-
-    function generatetraversal(curroom, path, minutes, openvalves, releasedpressure) {
-        //walk into the room
-        minutes++;
-        path.push(curroom.key);
-        if (minutes > 30 || openvalves.length == valveswithvals.size) {
-            //store off the path and the pressure and return
-            //console.log("out of time");
-            sets.push([path, releasedpressure]);
-            return;
-        } else {
-            //release pressure
-            releasedpressure += releasepressure(openvalves);
-            
-
-            //options for the room. i can open a valve or go to a neighbor
-            if (!openvalves.includes(curroom.key) && curroom.flow > 0) {
-                //leave it closed and go to neighbors
-                for (let i = 0; i < curroom.connections.length; i++) {
-                    const neighbor = valves.get(curroom.connections[i]);
-                    generatetraversal(neighbor, path, minutes, openvalves, releasedpressure);
-                }
-                //lets open it
-                openvalves.push(curroom.key);
-                //keep going
-                generatetraversal(curroom, path, minutes, openvalves, releasedpressure);
-
-            } else {
-                //need to go to neighbors
-                for (let i = 0; i < curroom.connections.length; i++) {
-                    const neighbor = valves.get(curroom.connections[i]);
-                    generatetraversal(neighbor, path, minutes, openvalves, releasedpressure);
-                }
+    valveswithvals.forEach((v, k) => {
+        distancesfromvtov[k] = {};    
+        valveswithvals.forEach((v2, k2) => {     
+            if(k2 !== k) {
+                distancesfromvtov[k][k2] = rooms.shortestPath(k,k2).length;
             }
-        }
-        function releasepressure(openvalves) {
-            let pressures = [0];
-            for(var i = 0; i < openvalves.length; i++) {
-                pressures.push(valves.get(openvalves[i]).flow);
-            }
-            return pressures.reduce((p, v) => { return p + v; });
-        }
+        });
+    });
 
+    console.log(doit("AA", "AA", 30));
+
+    function doit(valvek, decisions, minutesremaining) {
+        if(minutesremaining < 1) return 0;
+        const valve = valves.get(valvek);
+        //if we're here, the valve got open and will remain open
+        let pressurereleased = valve.flow * minutesremaining;
+
+        const possibilities = [];
+
+        let disttoothervalves = Object.keys(distancesfromvtov[valve.key]);
+
+        //walk the paths to other valves and figure it out
+        for(var i = 0; i < disttoothervalves.length; i++) {
+            const vkey = disttoothervalves[i];
+            if(decisions.includes(vkey)) continue;
+            if(minutesremaining - distancesfromvtov[valve.key][vkey] < 0) continue;
+            possibilities.push({valve: vkey, next: vkey, cost: distancesfromvtov[valve.key][vkey]});
+        }
+        if (possibilities.length > 0) {
+            pressurereleased += Math.max(...possibilities.map(dec => doit(dec.valve, decisions + "," + dec.next, minutesremaining - dec.cost)));
+        }
+        return pressurereleased;
     }
+
+    //console.log(distancesfromvtov);
 }
+    
+    
+
+function releasepressure(openvalves) {
+    let pressures = [0];
+    for(var i = 0; i < openvalves.length; i++) {
+        pressures.push(valves.get(openvalves[i]).flow);
+    }
+    return pressures.reduce((p, v) => { return p + v; });
+}
+// function part1() {
+
+//     const start = valves.get("AA");
+//     let sets = [];
+
+//     generatetraversal(start, [], 0, [], 0);
+
+//     sets.sort((a,b) => {return b[1] - a[1];});
+
+//     console.log(`${sets[0][0]} had the most pressure released: ${sets[0][1]}`);
+
+//     function generatetraversal(curroom, path, minutes, openvalves, releasedpressure) {
+//         //walk into the room
+//         minutes++;
+//         if (minutes > 10 || openvalves.length === valveswithvals.size) {
+//             //store off the path and the pressure and return
+//             //console.log("out of time");
+//             sets.push([path, releasedpressure]);
+//             return;
+//         } else {
+//             //release pressure
+//             releasedpressure += releasepressure(openvalves);
+//             path.push(curroom.key);
+            
+//             //options for the room. i can open a valve or go to a neighbor
+//             if (!openvalves.includes(curroom.key) && curroom.flow > 0) {
+//                 //leave it closed and go to neighbors
+//                 for (let i = 0; i < curroom.connections.length; i++) {
+//                     const neighbor = valves.get(curroom.connections[i]);
+//                     generatetraversal(neighbor, [...path], minutes, [...openvalves], releasedpressure);
+//                 }
+//                 //lets open it
+//                 openvalves.push(curroom.key);
+//                 //keep going
+//                 generatetraversal(curroom, [...path], minutes, [...openvalves], releasedpressure);
+
+//             } else {
+//                 //need to go to neighbors
+//                 for (let i = 0; i < curroom.connections.length; i++) {
+//                     const neighbor = valves.get(curroom.connections[i]);
+//                     generatetraversal(neighbor, [...path], minutes, [...openvalves], releasedpressure);
+//                 }
+//             }
+//         }
+//         function releasepressure(openvalves) {
+//             let pressures = [0];
+//             for(var i = 0; i < openvalves.length; i++) {
+//                 pressures.push(valves.get(openvalves[i]).flow);
+//             }
+//             return pressures.reduce((p, v) => { return p + v; });
+//         }
+
+//     }
+// }
 
 function createvalve(key, flow) {
     return {
@@ -95,193 +233,3 @@ function createvalve(key, flow) {
     };
 }
 
-//in case we need more dijk
-class Node {
-    constructor(val, priority) {
-        this.val = val;
-        this.priority = priority;
-    }
-}
-
-class PriorityQueue {
-    constructor() {
-        this.values = [];
-    }
-    enqueue(val, priority) {
-        let newNode = new Node(val, priority);
-        this.values.push(newNode);
-        this.bubbleUp();
-    }
-    bubbleUp() {
-        let idx = this.values.length - 1;
-        const element = this.values[idx];
-        while (idx > 0) {
-            let parentIdx = Math.floor((idx - 1) / 2);
-            let parent = this.values[parentIdx];
-            if (element.priority >= parent.priority) break;
-            this.values[parentIdx] = element;
-            this.values[idx] = parent;
-            idx = parentIdx;
-        }
-    }
-    dequeue() {
-        const min = this.values[0];
-        const end = this.values.pop();
-        if (this.values.length > 0) {
-            this.values[0] = end;
-            this.sinkDown();
-        }
-        return min;
-    }
-    sinkDown() {
-        let idx = 0;
-        const length = this.values.length;
-        const element = this.values[0];
-        while (true) {
-            let leftChildIdx = 2 * idx + 1;
-            let rightChildIdx = 2 * idx + 2;
-            let leftChild, rightChild;
-            let swap = null;
-
-            if (leftChildIdx < length) {
-                leftChild = this.values[leftChildIdx];
-                if (leftChild.priority < element.priority) {
-                    swap = leftChildIdx;
-                }
-            }
-            if (rightChildIdx < length) {
-                rightChild = this.values[rightChildIdx];
-                if (
-                    (swap === null && rightChild.priority < element.priority) ||
-                    (swap !== null && rightChild.priority < leftChild.priority)
-                ) {
-                    swap = rightChildIdx;
-                }
-            }
-            if (swap === null) break;
-            this.values[idx] = this.values[swap];
-            this.values[swap] = element;
-            idx = swap;
-        }
-    }
-}
-
-//Dijkstra's algorithm only works on a weighted graph.
-
-class WeightedGraph {
-    constructor() {
-        this.adjacencyList = {};
-    }
-    addVertex(vertex) {
-        if (!this.adjacencyList[vertex]) this.adjacencyList[vertex] = [];
-    }
-    addEdge(vertex1, vertex2, weight) {
-        this.adjacencyList[vertex1].push({ node: vertex2, weight });
-        //this.adjacencyList[vertex2].push({ node: vertex1, weight });
-    }
-    shortestPath(start, finish) {
-        let adj = this.adjacencyList;
-
-        const queue = [];
-        queue.push(start);
-
-        const discovered = [];
-        discovered[start] = true;
-
-        const edges = [];
-        edges[start] = 0;
-
-        const predecessors = [];
-        predecessors[start] = null;
-
-        const buildPath = (finish, start, predecessors) => {
-            const stack = [];
-            stack.push(finish);
-
-            let u = predecessors[finish];
-
-            while(u != start) {
-                stack.push(u);
-                u = predecessors[u];
-            }
-
-            stack.push(start);
-
-            let path = stack.reverse().join('-');
-
-            return path;
-        }
-    
-
-        while(queue.length) {
-            let v = queue.shift();
-
-            if (v === finish) {
-                return { 
-                    distance: edges[finish],
-                    path: buildPath(finish, start, predecessors)
-                };
-            }
-
-            for (let i = 0; i < adj[v].length; i++) {
-                if (!discovered[adj[v][i]]) {
-                    discovered[adj[v][i]] = true;
-                    queue.push(adj[v][i].node);
-                    edges[adj[v][i]] = edges[v] + 1;
-                    predecessors[adj[v][i]] = v;
-                }
-            }
-        }
-
-        return false;
-    }
-    Dijkstra(start, finish) {
-        const nodes = new PriorityQueue();
-        const distances = {};
-        const previous = {};
-        let path = []; //to return at end
-        let smallest;
-        //build up initial state
-        for (let vertex in this.adjacencyList) {
-            if (vertex === start) {
-                distances[vertex] = 0;
-                nodes.enqueue(vertex, 0);
-            } else {
-                distances[vertex] = Infinity;
-                nodes.enqueue(vertex, Infinity);
-            }
-            previous[vertex] = null;
-        }
-        // as long as there is something to visit
-        while (nodes.values.length) {
-            smallest = nodes.dequeue().val;
-            if (smallest === finish) {
-                //WE ARE DONE
-                //BUILD UP PATH TO RETURN AT END
-                while (previous[smallest]) {
-                    path.push(smallest);
-                    smallest = previous[smallest];
-                }
-                break;
-            }
-            if (smallest || distances[smallest] !== Infinity) {
-                for (let neighbor in this.adjacencyList[smallest]) {
-                    //find neighboring node
-                    let nextNode = this.adjacencyList[smallest][neighbor];
-                    //calculate new distance to neighboring node
-                    let candidate = distances[smallest] + nextNode.weight;
-                    let nextNeighbor = nextNode.node;
-                    if (candidate < distances[nextNeighbor]) {
-                        //updating new smallest distance to neighbor
-                        distances[nextNeighbor] = candidate;
-                        //updating previous - How we got to neighbor
-                        previous[nextNeighbor] = smallest;
-                        //enqueue in priority queue with new priority
-                        nodes.enqueue(nextNeighbor, candidate);
-                    }
-                }
-            }
-        }
-        return {"path": path.concat(smallest).reverse(),"distance":distances[finish]};
-    }
-}
